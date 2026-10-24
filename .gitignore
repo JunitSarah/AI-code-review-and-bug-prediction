@@ -1,32 +1,22 @@
-# Byte-compiled / optimized files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environments
-.venv/
-venv/
-ENV/
-env/
-
-# Node.js dependencies and build output
-node_modules/
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
-
 # Large model binaries (exceeds GitHub's 100MB limit)
 *.safetensors
 *.pt
 *.pth
+checkpoints/
+
+# Virtual environments
+.venv/
+__pycache__/
+*.pyc
 
 # Environment variables
 .env
 backend/.env
 
-# Raw datasets
+# Datasets, builds, and caches
 data/
-
-# OS files
-.DS_Store
-Thumbs.db
+results/
+node_modules/
+frontend/dist/
+.pytest_cache/
+*.zip

@@ -35,10 +35,12 @@ def build_samples(bugsinpy, defects4j):
     samples = []
     for group, path in iter_patches(bugsinpy, defects4j):
         text = path.read_text(errors="ignore")
-        for h in parse_unified_diff(text):
+        for hi, h in enumerate(parse_unified_diff(text)):
             for code, label in ((h.before, 1), (h.after, 0)):
                 if MIN_CHARS <= len(code) <= MAX_CHARS:
-                    samples.append({"code": code, "label": label, "group": group, "file": h.file})
+                    # pair_id links the buggy and fixed twins of one hunk (used by evaluate.py)
+                    samples.append({"code": code, "label": label, "group": group, "file": h.file,
+                                    "pair_id": f"{group}#{hi}"})
     return samples
 
 

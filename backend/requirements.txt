@@ -6,3 +6,5 @@ torch>=2.2
 transformers>=4.44
 langchain-core>=0.3
 langchain-anthropic>=0.3
+langchain-openai>=0.2
+python-dotenv>=1.0

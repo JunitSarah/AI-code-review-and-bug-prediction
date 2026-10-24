@@ -38,11 +38,11 @@ def parse_unified_diff(patch_text: str, exts: tuple[str, ...] = (".py", ".java")
         if line.startswith("diff --git"):
             flush()
             cur_file = None
-        elif line.startswith("+++ "):
+        elif line.startswith("+++ ") and not in_hunk:
             path = line[4:].strip()
             path = path[2:] if path.startswith("b/") else path
             cur_file = path if path.endswith(exts) else None
-        elif line.startswith("--- "):
+        elif line.startswith("--- ") and not in_hunk:
             continue
         elif HUNK_RE.match(line):
             flush()

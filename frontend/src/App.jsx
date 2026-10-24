@@ -26,6 +26,7 @@ function FileCard({ file }) {
           <div key={h.hunk_index} className="hunk">
             <div className="hunk-meta">
               Hunk {h.hunk_index + 1} · <b style={{ color: riskColor(h.risk) }}>{h.label}</b>
+              {h.rank_percentile >= 0.8 && <span className="top"> · top {Math.max(1, Math.round((1 - h.rank_percentile) * 100))}% riskiest in this PR</span>}
               <RiskBar value={h.risk} />
             </div>
             <pre>{h.snippet}</pre>
@@ -62,6 +63,10 @@ export default function App() {
     <main>
       <h1>AI Code Review &amp; Bug Prediction</h1>
       <p className="sub">CodeBERT fine-tuned on Defects4J + BugsInPy, with an LLM-written review.</p>
+      <p className="note">
+        Scores rank changes by <b>relative</b> defect risk to help you decide what to review first.
+        They are not proof that a bug exists, and a low score is not proof that code is correct.
+      </p>
 
       <div className="tabs">
         <button className={mode === "pr" ? "on" : ""} onClick={() => setMode("pr")}>GitHub PR</button>
@@ -92,6 +97,7 @@ export default function App() {
           <div className="overall">
             Overall risk <RiskBar value={result.overall_risk} />
           </div>
+          {result.summary_error && <div className="note">{result.summary_error}</div>}
           {result.summary && (
             <div className="card summary">
               <h2>Review</h2>

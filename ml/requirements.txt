@@ -4,3 +4,4 @@ datasets>=2.20
 scikit-learn>=1.5
 accelerate>=0.33
 numpy
+matplotlib

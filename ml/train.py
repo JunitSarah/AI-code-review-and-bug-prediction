@@ -5,14 +5,16 @@
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 from pathlib import Path
 
 import numpy as np
+import torch
 from datasets import load_dataset
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc_auc_score
-from transformers import (AutoModelForSequenceClassification, AutoTokenizer, Trainer,
-                          TrainingArguments, EarlyStoppingCallback)
+from transformers import (AutoModelForSequenceClassification, AutoTokenizer, DataCollatorWithPadding,
+                          Trainer, TrainingArguments, EarlyStoppingCallback)
 
 BASE = "microsoft/codebert-base"
 
@@ -30,6 +32,7 @@ def compute_metrics(pred):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--base", default=BASE, help="base model id or folder")
     ap.add_argument("--data", type=Path, default=Path("data/processed"))
     ap.add_argument("--out", type=Path, default=Path("artifacts/codebert-defect"))
     ap.add_argument("--epochs", type=int, default=4)
@@ -40,14 +43,18 @@ def main():
     args = ap.parse_args()
 
     ds = load_dataset("json", data_files={s: str(args.data / f"{s}.jsonl") for s in ("train", "val", "test")})
-    tok = AutoTokenizer.from_pretrained(BASE)
+    tok = AutoTokenizer.from_pretrained(args.base)
 
     def encode(batch):
         return tok(batch["code"], truncation=True, max_length=args.max_len)
 
-    ds = ds.map(encode, batched=True, remove_columns=["code", "group", "file"]).rename_column("label", "labels")
+    drop = [c for c in ds["train"].column_names if c != "label"]  # code, group, file, pair_id, ...
+    ds = ds.map(encode, batched=True, remove_columns=drop).rename_column("label", "labels")
 
-    model = AutoModelForSequenceClassification.from_pretrained(BASE, num_labels=2)
+    model = AutoModelForSequenceClassification.from_pretrained(args.base, num_labels=2)
+    # 10% of total steps as warmup; an explicit int works across transformers versions
+    steps_per_epoch = -(-len(ds["train"]) // args.batch)
+    warmup_steps = int(0.1 * steps_per_epoch * args.epochs)
     targs = TrainingArguments(
         output_dir=str(args.out / "checkpoints"),
         num_train_epochs=args.epochs,
@@ -59,14 +66,18 @@ def main():
         load_best_model_at_end=True,
         metric_for_best_model="f1",
         weight_decay=0.01,
-        warmup_ratio=0.1,
-        fp16=True,
+        warmup_steps=warmup_steps,
+        fp16=torch.cuda.is_available(),
         seed=args.seed,
         report_to="none",
     )
-    trainer = Trainer(model=model, args=targs, train_dataset=ds["train"], eval_dataset=ds["val"],
-                      tokenizer=tok, compute_metrics=compute_metrics,
-                      callbacks=[EarlyStoppingCallback(early_stopping_patience=2)])
+    kwargs = dict(model=model, args=targs, train_dataset=ds["train"], eval_dataset=ds["val"],
+                  data_collator=DataCollatorWithPadding(tok), compute_metrics=compute_metrics,
+                  callbacks=[EarlyStoppingCallback(early_stopping_patience=2)])
+    # `tokenizer=` was renamed `processing_class=` in newer transformers releases
+    tok_key = "processing_class" if "processing_class" in inspect.signature(Trainer.__init__).parameters else "tokenizer"
+    kwargs[tok_key] = tok
+    trainer = Trainer(**kwargs)
     trainer.train()
 
     test_metrics = trainer.evaluate(ds["test"], metric_key_prefix="test")

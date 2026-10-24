@@ -7,8 +7,12 @@ services:
     startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
       - key: MODEL_PATH
-        value: yourname/codebert-defect   # push the trained model to the HF Hub
+        value: yourname/codebert-defect   # Hugging Face Hub repo from scripts/upload_to_hf.py
+      - key: HF_TOKEN                      # only needed if the model repo is private
+        sync: false
       - key: GITHUB_TOKEN
         sync: false
       - key: ANTHROPIC_API_KEY

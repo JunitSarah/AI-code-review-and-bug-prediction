@@ -24,3 +24,5 @@ pre { margin: 0; padding: 10px; background: #8881; border-radius: 6px; overflow-
 .fill { height: 100%; }
 .bar span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.7rem; font-weight: 700; }
 .overall { display: flex; align-items: center; gap: 12px; margin: 24px 0 8px; font-weight: 600; }
+.note { margin: 0 0 20px; padding: 10px 12px; border-left: 3px solid #4f6df5; background: #4f6df510; font-size: 0.85rem; }
+.top { color: var(--muted); }

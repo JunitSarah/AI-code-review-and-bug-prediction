@@ -14,6 +14,7 @@ class HunkResult(BaseModel):
     filename: str
     hunk_index: int
     risk: float
+    rank_percentile: float = 1.0  # position within this request: 1.0 = riskiest hunk
     label: str  # "defect-prone" | "likely clean"
     snippet: str
 
@@ -27,5 +28,7 @@ class FileResult(BaseModel):
 class ReviewResponse(BaseModel):
     overall_risk: float
     files: list[FileResult]
-    summary: str | None = None  # LLM-written review; None if no API key configured
+    summary: str | None = None  # LLM-written review; None if no LLM is configured or the call failed
+    summary_error: str | None = None  # set when an LLM is configured but the review could not be produced
     model_version: str
+    threshold: float = 0.5
